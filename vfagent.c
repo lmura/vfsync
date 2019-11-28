@@ -1,6 +1,6 @@
 /*
  * Filesystem synchronization agent
- * 
+ *
  * Copyright (c) 2017 Fabrice Bellard
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -70,10 +70,10 @@ static void handle_client(int fd)
 {
     char buf[4096], cmd[16], url[1024];
     char user[256], password1[256], password2[256], password3[256];
-    int len;
+    int len, err;
     const char *p;
     FSUserEntry *fu;
-        
+
     len = read(fd, buf, sizeof(buf) - 1);
     if (len <= 0)
         return;
@@ -138,7 +138,11 @@ static void handle_client(int fd)
 #ifdef DEBUG
     printf("reply: '%s'\n", buf);
 #endif
-    write(fd, buf, strlen(buf));
+    err = write(fd, buf, strlen(buf));
+    if (err < 0) {
+       perror("write");
+       exit(1);
+    }
 }
 
 
@@ -146,7 +150,7 @@ static void server(const char *sock_path)
 {
     struct sockaddr_un addr;
     int fd, fd1;
-    
+
     init_list_head(&user_list);
 
     addr.sun_family = AF_UNIX;
@@ -158,7 +162,7 @@ static void server(const char *sock_path)
         perror("socket");
         exit(1);
     }
-    
+
     if (bind(fd, &addr, sizeof(addr)) < 0) {
         perror("bind");
         exit(1);
@@ -168,7 +172,7 @@ static void server(const char *sock_path)
         perror("chmod");
         exit(1);
     }
-    
+
     if (listen(fd, 5) < 0) {
         perror("listen");
         exit(1);
@@ -198,10 +202,10 @@ static void help(void)
 
 int main(int argc, char **argv)
 {
-    int c, pid;
+    int c, pid, err;
     BOOL daemon_flag, path_only;
     char sock_path[1024];
-    
+
     daemon_flag = TRUE;
     path_only = FALSE;
     for(;;) {
@@ -231,7 +235,7 @@ int main(int argc, char **argv)
             setsid();
             pid = fork();
             if (pid == 0) {
-                chdir("/");
+                err = chdir("/");
                 close(0);
                 close(1);
                 close(2);
@@ -239,18 +243,21 @@ int main(int argc, char **argv)
                 dup2(0, 1);
                 dup2(0, 2);
                 server(sock_path);
+                if (err < 0) {
+                   perror("chdir");
+                }
                 exit(1);
             } else {
                 exit(0);
             }
         }
     }
-    
+
     if (path_only)
         printf("%s", sock_path);
     else
         printf("export VFSYNC_SOCK=%s\n", sock_path);
-    
+
     if (!daemon_flag)
         server(sock_path);
     return 0;

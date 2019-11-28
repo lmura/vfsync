@@ -1,6 +1,6 @@
 /*
  * Filesystem synchronization client
- * 
+ *
  * Copyright (c) 2017 Fabrice Bellard
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -127,7 +127,7 @@ static void inode_free(FLINode *n)
         {
             struct list_head *el, *el1;
             FLDirEntry *de;
-            
+
             list_for_each_safe(el, el1, &n->u.dir.de_list) {
                 de = list_entry(el, FLDirEntry, link);
                 inode_free(de->inode);
@@ -168,7 +168,7 @@ static FLDirEntry *inode_search(FLINode *n, const char *name)
 {
     struct list_head *el;
     FLDirEntry *de;
-    
+
     if (n->type != FT_DIR)
         return NULL;
 
@@ -186,7 +186,7 @@ static FLINode *inode_search_path(FLINode *n, const char *path)
     const char *p, *p1;
     int len;
     FLDirEntry *de;
-    
+
     p = path;
     if (*p == '/')
         p++;
@@ -227,7 +227,7 @@ static int filelist_load_rec(const char **pp, FLINode *dir,
     uint32_t mode, uid, gid;
     uint64_t size;
     FLINode *n;
-    
+
     p = *pp;
     for(;;) {
         /* skip comments or empty lines */
@@ -249,7 +249,7 @@ static int filelist_load_rec(const char **pp, FLINode *dir,
         }
         type = mode >> 12;
         mode &= 0xfff;
-        
+
         if (parse_uint32(&uid, &p) < 0) {
             fprintf(stderr, "invalid uid\n");
             return -1;
@@ -261,7 +261,7 @@ static int filelist_load_rec(const char **pp, FLINode *dir,
         }
 
         n = inode_new(type, mode, uid, gid);
-        
+
         size = 0;
         switch(type) {
         case FT_CHR:
@@ -286,7 +286,7 @@ static int filelist_load_rec(const char **pp, FLINode *dir,
         default:
             break;
         }
-        
+
         /* modification time */
         if (parse_time(&n->mtime_sec, &n->mtime_nsec, &p) < 0) {
             fprintf(stderr, "invalid mtime\n");
@@ -298,7 +298,7 @@ static int filelist_load_rec(const char **pp, FLINode *dir,
             return -1;
         }
         inode_dirent_add(dir, fname, n);
-        
+
         if (type == FT_LNK) {
             if (parse_fname(lname, sizeof(lname), &p) < 0) {
                 fprintf(stderr, "invalid symlink name\n");
@@ -316,7 +316,7 @@ static int filelist_load_rec(const char **pp, FLINode *dir,
         }
 
         skip_line(&p);
-        
+
         if (type == FT_DIR) {
             char *path1;
             path1 = compose_path(path, fname);
@@ -334,7 +334,7 @@ int filelist_load(FLINode *root_inode, const char *str)
 {
     int ret;
     const char *p;
-    
+
     if (parse_tag_version(str) != 1)
         return -1;
     p = skip_header(str);
@@ -372,7 +372,7 @@ void dbuf_put_quoted_str(DynBuf *s, const char *str)
 static void fs_write_cmd(const char *cmd)
 {
     int fd, err;
-    
+
     fd = open("/" FSCMD_NAME, O_WRONLY);
     if (fd < 0)
         goto fail;
@@ -397,7 +397,7 @@ static int fs_sync_load_file(FSDevice *fs, uint8_t **pbuf,
     int err, size;
     FSStat st;
     FSQID qid;
-    
+
     fd = fs_walk_path(fs, dir_fd, name);
     if (!fd)
         return -P9_ENOENT;
@@ -446,7 +446,7 @@ static int __attribute__((format(printf, 2, 3))) fs_printf(FSStream *f,
     va_list ap;
     char buf[4096];
     int len;
-    
+
     va_start(ap, fmt);
     len = vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
@@ -463,7 +463,7 @@ static char *find_root_path_from_url(char **purl, const char *url,
 {
     const char *p;
     int i;
-    
+
     p = strchr(url, ':');
     if (!p)
         goto fail;
@@ -491,7 +491,7 @@ static char *hash_password(const char *user, const char *password)
 
     if (!password)
         return NULL;
-    
+
     snprintf(buf, sizeof(buf), "user=%s", user);
     pbkdf2_hmac_sha256((uint8_t *)password, strlen(password),
                        (uint8_t *)buf, strlen(buf), 4096, 32,
@@ -514,7 +514,7 @@ static char *create_fs_key(const char *password)
 
     RAND_bytes(secret_key, FS_KEY_LEN);
     RAND_bytes(salt, SALT_LEN);
-    
+
     pbkdf2_hmac_sha256((uint8_t *)password, strlen(password), salt, SALT_LEN,
                        4096, PWD_KEY_LEN, pwd_key);
     AES_set_encrypt_key(pwd_key, PWD_KEY_LEN * 8, &pwd_aes_state);
@@ -522,7 +522,7 @@ static char *create_fs_key(const char *password)
     memset(secret_key, 0, FS_KEY_LEN);
     memset(pwd_key, 0, PWD_KEY_LEN);
     memset(&pwd_aes_state, 0, sizeof(pwd_aes_state));
-    
+
     encode_hex(buf, salt, SALT_LEN);
     encode_hex(buf + SALT_LEN * 2, encrypted_key, FS_KEY_LEN);
     return strdup(buf);
@@ -568,7 +568,7 @@ static void fs_sync_init(FSDevice *fs, const char *url1,
     int err;
     char *root_path, *url;
     FSStream fp_s, *fp = &fp_s;
-    
+
     assert(!fs->fs_attach(fs, &root_fd, &qid, 0, "", ""));
 
     /* create the directory */
@@ -592,7 +592,7 @@ static void fs_sync_init(FSDevice *fs, const char *url1,
         fatal_error("could not create '%s'", "info.txt");
 
     root_path = find_root_path_from_url(&url, url1, ROOT_DIR_COUNT);
-    
+
     fp->fs = fs;
     fp->fd = fd;
     fp->pos = 0;
@@ -630,16 +630,16 @@ typedef struct {
     FSFileID next_file_id; /* only valid if revision is valid */
     BOOL has_root_id;
     FSFileID root_id;
-    
+
     int wget_status;
     BOOL wget_completed;
     /* used in fs_sync_update() only */
     uint64_t new_revision;
-    
+
     /* used in fs_sync_commit() only */
     BOOL fl_updated;
     char *new_fs_key;
-    
+
     /* file encryption key */
     BOOL key_available;
     BOOL is_encrypted;
@@ -710,7 +710,7 @@ int fs_wget_file3(FSSyncState *s,
 
     dbuf_putstr(&cmd, " ");
     dbuf_put_quoted_str(&cmd, password);
-    
+
     dbuf_putstr(&cmd, " ");
     if (post_filename) {
         fname = compose_path(s->local_dir, post_filename);
@@ -719,7 +719,7 @@ int fs_wget_file3(FSSyncState *s,
     }
     dbuf_put_quoted_str(&cmd, fname);
     free(fname);
-    
+
     dbuf_putstr(&cmd, " ");
     fname = compose_path(s->local_dir, filename);
     dbuf_put_quoted_str(&cmd, fname);
@@ -735,7 +735,7 @@ int fs_wget_file3(FSSyncState *s,
 
     snprintf(buf, sizeof(buf), " %d", 0); /* flags, not used yet */
     dbuf_putstr(&cmd, buf);
-    
+
     fd = open("/" FSCMD_NAME, O_RDWR);
     if (fd < 0) {
         dbuf_free(&cmd);
@@ -773,21 +773,21 @@ void pbkdf2_hmac_sha256(const uint8_t *pwd, int pwd_len,
     DynBuf cmd;
     char buf[4096];
     int err, fd;
-    
+
     dbuf_init(&cmd);
     dbuf_putstr(&cmd, "pbkdf2 ");
 
     encode_hex(buf, pwd, pwd_len);
     dbuf_putstr(&cmd, buf);
-    
+
     dbuf_putstr(&cmd, " ");
-    
+
     encode_hex(buf, salt, salt_len);
     dbuf_putstr(&cmd, buf);
 
     snprintf(buf, sizeof(buf), " %d %d", iter, key_len);
     dbuf_putstr(&cmd, buf);
-    
+
     fd = open("/" FSCMD_NAME, O_RDWR);
     if (fd < 0)
         fatal_error("could not open %s", "/" FSCMD_NAME);
@@ -795,7 +795,7 @@ void pbkdf2_hmac_sha256(const uint8_t *pwd, int pwd_len,
     dbuf_free(&cmd);
     if (err < 0)
         fatal_error("pbkdf2 write");
-    
+
     /* wait until the completion */
     for(;;) {
         err = read(fd, out, key_len);
@@ -842,7 +842,7 @@ int fs_wget_file3(FSSyncState *s,
     FSStat st;
     int err;
     AES_KEY *aes_state;
-    
+
     //    printf("file=%s url=%s\n", filename, url);
     fd = fs_walk_path1(fs, s->root_fd, filename, &name);
     if (!fd)
@@ -874,7 +874,7 @@ int fs_wget_file3(FSSyncState *s,
     else
         aes_state = NULL;
     s->wget_completed = FALSE;
-    
+
     fs_wget_file2(fs, fd, url, user, password, post_fd, post_data_len,
                   download_file_cb, s, aes_state);
 
@@ -913,7 +913,7 @@ static int fs_sync_agent_set_get_password(FSSyncState *s,
     int len, err;
     const char *p;
     char buf1[32], password1[256], password2[256], password3[256];
-    
+
     sock_path = getenv("VFSYNC_SOCK");
     if (!sock_path)
         return -1;
@@ -929,7 +929,7 @@ static int fs_sync_agent_set_get_password(FSSyncState *s,
         close(fd);
         return -1;
     }
-    
+
     dbuf_init(&cmd);
 
     if (set) {
@@ -961,13 +961,13 @@ static int fs_sync_agent_set_get_password(FSSyncState *s,
         printf("cmd=%s\n", (char *)cmd.buf);
     }
 #endif
-    
+
     err = write(fd, cmd.buf, cmd.size);
     if (err < 0) {
         perror("write");
         exit(1);
     }
-        
+
     dbuf_free(&cmd);
 
     len = read(fd, buf, sizeof(buf) - 1);
@@ -978,14 +978,14 @@ static int fs_sync_agent_set_get_password(FSSyncState *s,
     buf[len] = '\0';
 
     //    printf("reply=%s\n", buf);
-    
+
     p = buf;
     if (parse_fname(buf1, sizeof(buf1), &p) < 0)
         goto fail;
-    
+
     if (strcmp(buf1, "ok") != 0)
         goto fail;
-    
+
     if (!set) {
         if (parse_fname(password1, sizeof(password1), &p) < 0)
             goto fail;
@@ -1017,7 +1017,7 @@ static char *cmdline_pwd;
 static void fs_sync_read_password(FSSyncState *s)
 {
     char *password;
-    
+
     if (!s->user)
         return;
 
@@ -1044,8 +1044,8 @@ static void fs_lock(FSSyncState *s)
     char *lock_fname;
     char buf[64];
     BOOL has_lock;
-    int pid, fd, len;
-    
+    int pid, fd, len, err;
+
     has_lock = FALSE;
     lock_fname = compose_path(s->local_dir, SYNCDIR_NAME "/lock");
     for(;;) {
@@ -1053,8 +1053,12 @@ static void fs_lock(FSSyncState *s)
         if (fd >= 0) {
             /* the lock file does not exists : create it */
             snprintf(buf, sizeof(buf), "%d", getpid());
-            write(fd, buf, strlen(buf));
+            err = write(fd, buf, strlen(buf));
             close(fd);
+            if (err < 0) {
+                perror("write");
+                exit(1);
+            }
             break;
         } else {
             /* the lock exists : see if there is still a process holding it */
@@ -1112,30 +1116,30 @@ static FSSyncState *fs_sync_start(const char *local_dir, int flags)
     char fname[1024];
     FSStat st;
     FSQID qid;
-    
+
     fs = fs_disk_init(local_dir);
     if (!fs) {
         fprintf(stderr, "%s: not a directory\n", local_dir);
         exit(1);
     }
-    
+
     s = mallocz(sizeof(*s));
     s->local_dir = strdup(local_dir);
     s->fs = fs;
     s->preserve_uid_gid = ((flags & SYNC_FLAG_PRESERVE_UID_GID) != 0);
     s->verbose = !(flags & SYNC_FLAG_QUIET);
     assert(!fs->fs_attach(fs, &s->root_fd, &qid, 0, "", ""));
-    
+
     s->syncdir_fd = fs_walk_path(fs, s->root_fd, SYNCDIR_NAME);
     if (!s->syncdir_fd)
         fatal_error("could not find '%s' directory\n", SYNCDIR_NAME);
-    
+
     err = fs->fs_stat(fs, s->syncdir_fd, &st);
     if (err < 0 || (st.st_mode & P9_S_IFMT) != P9_S_IFDIR)
         fatal_error("'%s' must be a directory\n", SYNCDIR_NAME);
 
     fs_lock(s);
-    
+
     size = fs_sync_load_file(fs, &buf, s->syncdir_fd, "info.txt", INT_MAX);
     if (size < 0)
         fatal_error("could not load info.txt");
@@ -1192,7 +1196,7 @@ static FSSyncState *fs_sync_start(const char *local_dir, int flags)
             free(buf);
         }
     }
-    
+
     return s;
 }
 
@@ -1231,11 +1235,11 @@ static void fs_sync_update(const char *local_dir, int flags)
     char buf[128], *url;
     struct timeval tv;
     int ret;
-    
+
     s = fs_sync_start(local_dir, flags);
     if (s->verbose)
         printf("Updating:\n");
-    
+
     /* check if new revision on server */
     /* avoid using cached version */
     gettimeofday(&tv, NULL);
@@ -1250,7 +1254,7 @@ static void fs_sync_update(const char *local_dir, int flags)
             /* in case of error, remove the created dir.  XXX: should
                create the directory later, but need to reorganize the
                code */
-            remove_checkout_sync_dir(s); 
+            remove_checkout_sync_dir(s);
         }
         http_error(s, ret, url);
     }
@@ -1282,7 +1286,7 @@ static void revision_loaded(FSSyncState *s)
     char *buf;
     char buf1[256];
     uint64_t fs_max_size;
-    
+
     if (fs_sync_load_file(fs, (uint8_t **)&buf, s->syncdir_fd, HEAD_FILENAME, INT_MAX) < 0)
         fatal_error("could not open %s", HEAD_FILENAME);
     fs->fs_unlinkat(fs, s->syncdir_fd, HEAD_FILENAME);
@@ -1299,10 +1303,10 @@ static void revision_loaded(FSSyncState *s)
     s->has_root_id = FALSE;
     if (parse_tag_file_id(&s->root_id, buf, "RootID") >= 0)
         s->has_root_id = TRUE;
-        
+
     /* set the key if not known yet (only happens in checkout or after
        first commit) */
-    if (!s->key_available && 
+    if (!s->key_available &&
         parse_tag(buf1, sizeof(buf1), buf, "Key") >= 0) {
         write_fs_key(s, buf1);
         fs_sync_set_fs_key(s, buf1);
@@ -1315,15 +1319,15 @@ static void revision_loaded(FSSyncState *s)
     if (s->need_agent_set) {
         fs_sync_agent_set_get_password(s, TRUE);
     }
-    
+
     /* set the Root URL in the filesystem */
 #ifdef CONFIG_FS_CMD
     {
         DynBuf cmd;
         char *root_url;
-        
+
         root_url = compose_url(s->url, ROOT_FILENAME);
-        
+
         dbuf_init(&cmd);
         dbuf_putstr(&cmd, "set_base_url ");
         dbuf_put_quoted_str(&cmd, s->local_dir);
@@ -1344,7 +1348,7 @@ static void revision_loaded(FSSyncState *s)
         }
 
         dbuf_putc(&cmd, '\0');
-        
+
         fs_write_cmd((char *)cmd.buf);
         dbuf_free(&cmd);
         free(root_url);
@@ -1367,7 +1371,7 @@ static void revision_loaded(FSSyncState *s)
         char *root_url, *url;
         char root_id[64];
         int ret;
-        
+
         url = compose_url(s->url, ROOT_FILENAME);
         snprintf(root_id, sizeof(root_id), "%016" PRIx64, s->root_id);
         root_url = compose_url(url, root_id);
@@ -1389,7 +1393,7 @@ static void update_current_revision(FSSyncState *s)
     FSFile *fd;
     FSStream fp_s, *fp = &fp_s;
     FSQID qid;
-    
+
     fs->fs_unlinkat(fs, s->syncdir_fd, "current.txt");
     fd = fs_dup(fs, s->syncdir_fd);
     ERR(fs->fs_create(fs, &qid, fd, "current.txt", P9_O_RDWR | P9_O_TRUNC,
@@ -1412,7 +1416,7 @@ static void filelist_loaded(FSSyncState *s, BOOL has_filelist)
     uint8_t *buf;
     FLINode *fl_new, *fl_cur;
     int err, size;
-    
+
     fl_new = inode_new(FT_DIR, 0777, 0, 0);
     if (has_filelist) {
         if (fs_sync_load_file(fs, &buf, s->syncdir_fd,
@@ -1475,7 +1479,7 @@ static void conflict_rename(FSSyncState *s,
     uint32_t n;
     FSFile *fd;
     int err;
-    
+
     /* XXX: inefficient and potentially incorrect if the name is too long */
     n = 1;
     for(;;) {
@@ -1495,7 +1499,7 @@ static void conflict_rename(FSSyncState *s,
         free(fname);
         free(fname_new);
     }
-    
+
     err = fs->fs_renameat(fs, dir_fd, name, dir_fd, new_name);
     if (err < 0)
         fatal_error("could not rename '%s' to '%s'", name, new_name);
@@ -1509,26 +1513,26 @@ static void download_file(FSSyncState *s, FSFileID file_id, const char *path,
     char fname[FILEID_SIZE_MAX];
     char buf[32];
     char *filename;
-    
+
     dbuf_init(&cmd);
     dbuf_putstr(&cmd, "set_url ");
-    
+
     filename = compose_path(s->local_dir, path);
     dbuf_put_quoted_str(&cmd, filename);
     free(filename);
-    
+
     dbuf_putstr(&cmd, " ");
     dbuf_put_quoted_str(&cmd, s->local_dir);
-    
+
     file_id_to_filename(fname, file_id);
     dbuf_putstr(&cmd, " ");
     dbuf_putstr(&cmd, fname);
-    
+
     snprintf(buf, sizeof(buf), " %" PRIu64, size);
     dbuf_putstr(&cmd, buf);
-    
+
     dbuf_putc(&cmd, '\0');
-    
+
     fs_write_cmd((char *)cmd.buf);
     dbuf_free(&cmd);
 }
@@ -1538,7 +1542,7 @@ static void download_file(FSSyncState *s, FSFileID file_id, const char *path,
 {
     char *root_url, *url, fname[FILEID_SIZE_MAX];
     int ret;
-    
+
     file_id_to_filename(fname, file_id);
     root_url = compose_url(s->url, ROOT_FILENAME);
     url = compose_url(root_url, fname);
@@ -1560,7 +1564,7 @@ static FSFile *sync_newfile(FSSyncState *s, FSFile *dir_fd,
     FSFile *fd;
     int err;
     FSQID qid;
-    
+
     if (s->verbose) {
         char *fname;
         fname = compose_path(path, name);
@@ -1622,7 +1626,7 @@ static FSFile *sync_newfile(FSSyncState *s, FSFile *dir_fd,
     default:
         abort();
     }
-    
+
     if (!fd) {
         fd = fs_walk_path(fs, dir_fd, name);
         if (!fd)
@@ -1642,7 +1646,7 @@ static BOOL same_inode(FLINode *n1, FLINode *n2)
         n1->gid != n2->gid ||
         n1->mode != n2->mode)
         return FALSE;
-    
+
     switch(n1->type) {
     case FT_REG:
         if (n1->u.reg.size != n2->u.reg.size)
@@ -1660,7 +1664,7 @@ static BOOL same_inode(FLINode *n1, FLINode *n2)
 
             list_for_each(el, &n1->u.dir.de_list) {
                 de1 = list_entry(el, FLDirEntry, link);
-                
+
                 de2 = inode_search(n2, de1->name);
                 if (!de2)
                     return FALSE;
@@ -1704,7 +1708,7 @@ static BOOL same_content(FSSyncState *s, FSFile *f, FSStat *st, FLINode *n)
 {
     int err;
     char buf[1024];
-    
+
     if ((st->st_mode >> 12) != n->type)
         return FALSE;
     switch(n->type) {
@@ -1742,7 +1746,7 @@ static int fs_iterate_dir(FSDevice *fs, FSFile *dir_fd,
     uint8_t buf[1024];
     int err, pos, name_len, len;
     char *name;
-    
+
     err = fs->fs_open(fs, &qid, dir_fd, P9_O_RDONLY | P9_O_DIRECTORY,
                       NULL, NULL);
     if (err < 0)
@@ -1765,7 +1769,7 @@ static int fs_iterate_dir(FSDevice *fs, FSFile *dir_fd,
             memcpy(name, buf + pos, name_len);
             pos += name_len;
             name[name_len] = 0;
-            
+
             if (strcmp(name, ".") != 0 && strcmp(name, "..") != 0) {
                 err = cb(fs, dir_fd, name, opaque);
             } else {
@@ -1794,7 +1798,7 @@ static int same_file_cb(FSDevice *fs, FSFile *dir_fd,
     FSFile *f1;
     FSStat st1;
     FLDirEntry *de;
-    
+
     de = inode_search(state->n, name);
     if (!de)
         return FALSE;
@@ -1842,7 +1846,7 @@ static BOOL same_file1(FSSyncState *s, FSFile *f, FSStat *st, FLINode *n,
         struct list_head *el;
         SameFileCBState state;
         int err;
-        
+
         fs = s->fs;
 
         list_for_each(el, &n->u.dir.de_list) {
@@ -1851,7 +1855,7 @@ static BOOL same_file1(FSSyncState *s, FSFile *f, FSStat *st, FLINode *n,
         }
 
         dir_fd = fs_dup(fs, f);
-        
+
         state.s = s;
         state.n = n;
         err = fs_iterate_dir(fs, dir_fd, same_file_cb, &state);
@@ -1901,7 +1905,7 @@ static int remove_file_or_dir(FSDevice *fs, FSFile *f, const char *name,
     int err;
     RemoveFileState rs;
     FSFile *f1;
-    
+
     if (verbose) {
         char *fname;
         fname = compose_path(path, name);
@@ -1947,7 +1951,7 @@ static void filelist_modfile_rec(FSSyncState *s, FSFile *dir_fd,
     int err, f_type;
     struct list_head *el;
     FSStat st;
-    
+
     //    printf("modfile_rec: path=%s\n", path);
     list_for_each(el, &dir_new->u.dir.de_list) {
         de = list_entry(el, FLDirEntry, link);
@@ -1974,7 +1978,7 @@ static void filelist_modfile_rec(FSSyncState *s, FSFile *dir_fd,
                 } else {
                     /* modified file with local content */
                     err = fs->fs_stat(fs, fd, &st);
-                    if (err < 0) 
+                    if (err < 0)
                         fatal_error("cannot stat '%s'", de->name);
                     f_type = (st.st_mode >> 12);
                     if (n->type == FT_DIR) {
@@ -2030,7 +2034,7 @@ static void filelist_modfile_rec(FSSyncState *s, FSFile *dir_fd,
         } else if (fd) {
             /* new file with local content */
             err = fs->fs_stat(fs, fd, &st);
-            if (err < 0) 
+            if (err < 0)
                 fatal_error("cannot stat '%s'", de->name);
             f_type = (st.st_mode >> 12);
             if (n->type == FT_DIR) {
@@ -2089,7 +2093,7 @@ static void filelist_modfile_rec(FSSyncState *s, FSFile *dir_fd,
                 fd = fs_walk_path(fs, dir_fd, de->name);
                 if (fd) {
                     err = fs->fs_stat(fs, fd, &st);
-                    if (err < 0) 
+                    if (err < 0)
                         fatal_error("cannot stat '%s'", de->name);
                     if (same_file(s, fd, &st, n)) {
                         err = remove_file_or_dir(fs, dir_fd, de->name,
@@ -2156,11 +2160,12 @@ static void encrypt_file(FSDevice *fs, FSStream *fo,
     int len, ret, out_len;
     uint8_t iv[AES_BLOCK_SIZE];
 
-    RAND_pseudo_bytes(iv, AES_BLOCK_SIZE);
-    
+    RAND_bytes(iv, AES_BLOCK_SIZE);
+    // RAND_pseudo_bytes(iv, AES_BLOCK_SIZE);
+
     ERR(fs_stream_write(fo, encrypted_file_magic, 4));
     ERR(fs_stream_write(fo, iv, AES_BLOCK_SIZE));
-    
+
     pos = 0;
     while (size != 0) {
         len = ENC_BUF_LEN;
@@ -2171,7 +2176,7 @@ static void encrypt_file(FSDevice *fs, FSStream *fo,
             fatal_error("read error");
         size -= len;
         pos += len;
-        
+
         if (size == 0) {
             /* handle the padding */
             out_len = (len + AES_BLOCK_SIZE) & ~(AES_BLOCK_SIZE - 1);
@@ -2227,9 +2232,9 @@ static void add_inode(FSSyncState *s, FSStream *fo, FSFile *fd, uint64_t size,
     FSQID qid;
     uint64_t content_size;
     FSFileID file_id;
-    
+
     assert(size > 0);
-    
+
     content_size = size;
     if (content_size != 0 && s->is_encrypted) {
         content_size = 4 + AES_BLOCK_SIZE +
@@ -2255,9 +2260,9 @@ static FLDirEntry *add_file(FSSyncState *s, FSStream *fo,
     int f_type;
     uint8_t buf[4096];
     FLINode *n1;
-    
+
     s->fl_updated = TRUE;
-    
+
     f_type = st->st_mode >> 12;
     n1 = inode_new(f_type, st->st_mode, st->st_uid, st->st_gid);
     n1->mtime_sec = st->st_mtime_sec;
@@ -2315,7 +2320,7 @@ static int fs_sync_commit_rec_file(FSDevice *fs, FSFile *dir_fd,
 
     if (state->local_path[0] == '\0' && !strcmp(name, SYNCDIR_NAME))
         return 0;
-    
+
     fd = fs_walk_path(fs, dir_fd, name);
     if (!fd)
         fatal_error("fs_walk_path");
@@ -2383,7 +2388,7 @@ static int fs_sync_commit_rec_file(FSDevice *fs, FSFile *dir_fd,
     fs->fs_delete(fs, fd);
     return 0;
 }
-                                   
+
 /* 'local_path' is the local path (relative to s->local_, 'fl_path' is the path in the
    repository. */
 static void fs_sync_commit_rec(FSSyncState *s, FSFile *dir_fd,
@@ -2394,7 +2399,7 @@ static void fs_sync_commit_rec(FSSyncState *s, FSFile *dir_fd,
     FLDirEntry *de;
     struct list_head *el, *el1;
     FSSyncCommitState state;
-    
+
     if (dir) {
         list_for_each(el, &dir->u.dir.de_list) {
             de = list_entry(el, FLDirEntry, link);
@@ -2430,7 +2435,7 @@ static void filelist_write_dirent(FLDirEntry *de, FSStream *fo)
     const char *name;
     uint32_t v;
     char *fname;
-    
+
     n = de->inode;
     name = de->name;
     fs_printf(fo, "%06o %u %u", n->mode | (n->type << 12), n->uid, n->gid);
@@ -2474,7 +2479,7 @@ static void filelist_write_dir(FLINode *n, FSStream *fo)
 {
     struct list_head *el;
     FLDirEntry *de;
-    
+
     assert(n->type == FT_DIR);
     list_for_each(el, &n->u.dir.de_list) {
         de = list_entry(el, FLDirEntry, link);
@@ -2497,7 +2502,7 @@ static void filelist_add(FSSyncState *s, FLINode *fl, FSStream *fo)
     FSFile *fd;
     FSStream fp_s, *fp = &fp_s;
     FSFileID file_id;
-    
+
     fd = fs_dup(fs, s->syncdir_fd);
     if (fs->fs_create(fs, &qid, fd, FILELIST_FILENAME ".new",
                       P9_O_RDWR | P9_O_TRUNC, 0600, 0) < 0) {
@@ -2507,11 +2512,11 @@ static void filelist_add(FSSyncState *s, FLINode *fl, FSStream *fo)
     fp->fd = fd;
     fp->pos = 0;
     filelist_write(fp, fl);
-    
+
     add_inode(s, fo, fd, fp->pos, &file_id);
-    
+
     fs->fs_delete(fs, fd);
-    
+
     /* remove the previous root */
     if (s->has_root_id) {
         fs_printf(fo, "rm %" PRIx64 "\n", s->root_id);
@@ -2542,7 +2547,7 @@ static void fs_sync_commit(const char *local_dir, int flags)
     fs = s->fs;
     if (s->revision == 0)
         fatal_error("Need to update repository before commiting\n");
-    
+
     s->new_fs_key = NULL;
     if (!s->key_available) {
         if (s->revision == 1) {
@@ -2555,10 +2560,10 @@ static void fs_sync_commit(const char *local_dir, int flags)
             fatal_error("encryption key not available: update the repository first");
         }
     }
-    
+
     if (s->verbose)
         printf("Committing:\n");
-    
+
     /* load the current file list, if any */
     fl_cur = inode_new(FT_DIR, 0777, 0, 0);
     {
@@ -2576,7 +2581,7 @@ static void fs_sync_commit(const char *local_dir, int flags)
         }
     }
     s->fl_updated = FALSE;
-    
+
     fo = fs_dup(fs, s->syncdir_fd);
     if (fs->fs_create(fs, &qid, fo, "commit", P9_O_RDWR | P9_O_TRUNC,
                       0600, 0) < 0)
@@ -2600,7 +2605,7 @@ static void fs_sync_commit(const char *local_dir, int flags)
     }
     fs->fs_delete(fs, fo);
     inode_free(fl_cur);
-    
+
     if (dry_run) {
         /* for testing: keep the commit file */
         if (s->verbose)
@@ -2640,11 +2645,11 @@ static void fs_sync_commit_cb(FSSyncState *s)
     int result;
     char *buf;
     char buf1[256];
-    
+
     if (fs_sync_load_file(fs, (uint8_t **)&buf, s->syncdir_fd,
                           "commit_result", INT_MAX) < 0)
         fatal_error("Could not open %s\n", "commit_result");
-    
+
     if (parse_tag(buf1, sizeof(buf1), buf, "Result") < 0) {
         fprintf(stderr, "invalid commit result format\n");
         result = FS_ERR_SYNTAX;
@@ -2675,7 +2680,7 @@ static void fs_sync_commit_cb(FSSyncState *s)
     } else {
         fs->fs_unlinkat(fs, s->syncdir_fd, FILELIST_FILENAME ".new");
     }
-    
+
     fs_sync_end(s, result);
 }
 
@@ -2686,7 +2691,7 @@ ssize_t get_pass(char **pbuf)
     char *buf;
     size_t size;
     ssize_t len;
-    
+
     if (tcgetattr(0, &old) < 0)
         return -1;
     new = old;
@@ -2713,7 +2718,7 @@ static void checkout(const char *url, const char *dir1, const char *user,
     FSDevice *fs;
     int err;
     char *dir;
-    
+
     err = mkdir(dir1, 0755);
     if (err < 0 && errno != EEXIST) {
         perror(dir1);
@@ -2729,7 +2734,7 @@ static void checkout(const char *url, const char *dir1, const char *user,
 
     fs_sync_init(fs, url, user, pwd, FALSE);
     fs_end(fs);
-    
+
     fs_sync_update(dir, flags | SYNC_FLAG_CHECKOUT);
     fs_net_event_loop(NULL, NULL);
 
@@ -2741,7 +2746,7 @@ static char *find_local_dir(void)
     char *dir, *p;
     char *path;
     struct stat st;
-    
+
     dir = get_current_dir_name();
     for(;;) {
         path = compose_path(dir, SYNCDIR_NAME);
@@ -2765,7 +2770,7 @@ static void info(void)
 {
     FSSyncState *s;
     char *local_dir;
-    
+
     local_dir = find_local_dir();
     if (!local_dir) {
         fprintf(stderr, "Could not find local repository\n");
@@ -2807,7 +2812,7 @@ static void update_or_commit(BOOL update, BOOL commit, int flags)
         fs_sync_commit(local_dir, flags);
         fs_net_event_loop(NULL, NULL);
     }
-    
+
     free(local_dir);
 }
 
@@ -2862,13 +2867,13 @@ int main(int argc, char **argv)
 {
     const char *cmd, *user, *saved_pwd;
     int c, flags, option_index;
-    
+
     user = NULL;
     saved_pwd = NULL;
     flags = 0;
     if (getuid() == 0)
         flags |= SYNC_FLAG_PRESERVE_UID_GID;
-    
+
     for(;;) {
         c = getopt_long_only(argc, argv, "hu:nqgp:", options, &option_index);
         if (c == -1)
@@ -2937,6 +2942,6 @@ int main(int argc, char **argv)
     }
 
     fs_wget_end();
-    
+
     return 0;
 }
